@@ -1,130 +1,45 @@
 #include "mainwindow.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QMessageBox>
-#include <QLabel>
+#include "student_widget.h"
+#include "welcome_dialog.h"
+#include <QMenuBar>
 #include <QFileDialog>
-#include "logger.h"
+#include <QApplication>
 
-MainWindow::MainWindow(QWidget* parent, const QString& filename) : QMainWindow(parent), initialFilename(filename) {
-    QWidget* central = new QWidget(this);
-    QVBoxLayout* mainLayout = new QVBoxLayout(central);
+MainWindow::MainWindow(const QString& firstFile, QWidget* parent) : QMainWindow(parent) {
+    tabWidget = new QTabWidget(this);
+    tabWidget->setTabsClosable(true);
+    setCentralWidget(tabWidget);
+    connect(tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
 
-    // Списки предметов
-    QHBoxLayout* listsLayout = new QHBoxLayout();
-    requiredSubjectsList = new QListWidget(this);
-    requiredSubjectsList->setSelectionMode(QAbstractItemView::MultiSelection);
-    excludedSubjectsList = new QListWidget(this);
-    excludedSubjectsList->setSelectionMode(QAbstractItemView::MultiSelection);
-    listsLayout->addWidget(new QLabel("Обязательные предметы:"));
-    listsLayout->addWidget(requiredSubjectsList);
-    listsLayout->addWidget(new QLabel("Исключаемые предметы:"));
-    listsLayout->addWidget(excludedSubjectsList);
-    mainLayout->addLayout(listsLayout);
+    fileMenu = menuBar()->addMenu("Файл");
+    openFileAction = new QAction("Открыть ещё одно окно", this);
+    fileMenu->addAction(openFileAction);
+    connect(openFileAction, &QAction::triggered, this, &MainWindow::onOpenFile);
 
-    // Кнопка поиска
-    searchButton = new QPushButton("Поиск", this);
-    mainLayout->addWidget(searchButton);
-
-    // Кнопка очистки
-    clearButton = new QPushButton("Очистить", this);
-    clearButton->setEnabled(false);
-    mainLayout->addWidget(clearButton);
-
-    // Кнопка выбора другого файла
-    chooseFileButton = new QPushButton("Выбрать другой файл", this);
-    mainLayout->addWidget(chooseFileButton);
-
-    // Поле для вывода результатов
-    resultEdit = new QTextEdit(this);
-    resultEdit->setReadOnly(true);
-    mainLayout->addWidget(resultEdit);
-
-    setCentralWidget(central);
-    resize(600, 400);
-
-    connect(searchButton, &QPushButton::clicked, this, &MainWindow::onSearchClicked);
-    connect(clearButton, &QPushButton::clicked, this, &MainWindow::onClearClicked);
-    connect(chooseFileButton, &QPushButton::clicked, this, &MainWindow::onChooseFileClicked);
-
-    // Загружаем данные только если файл передан
-    if (!initialFilename.isEmpty()) {
-        loadData(initialFilename);
-    }
-    updateSubjectsList();
-    Logger::instance().info("Приложение запущено. Открытие главного окна.");
+    openStudentTab(firstFile);
 }
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::loadData(const QString& filename) {
-    try {
-        loadStudentsFromFile(filename.toStdString(), studentSubjects, subjectStudents);
-        Logger::instance().info("Данные успешно загружены из файла: " + filename.toStdString());
-        // Собираем все предметы
-        allSubjects.clear();
-        for (const auto& [subject, _] : subjectStudents) {
-            allSubjects.insert(subject);
-        }
-    } catch (const std::exception& ex) {
-        Logger::instance().error(std::string("Ошибка при загрузке файла: ") + ex.what());
-        QMessageBox::critical(this, "Ошибка", ex.what());
-    }
-}
-
-void MainWindow::updateSubjectsList() {
-    requiredSubjectsList->clear();
-    excludedSubjectsList->clear();
-    for (const auto& subject : allSubjects) {
-        requiredSubjectsList->addItem(QString::fromStdString(subject));
-        excludedSubjectsList->addItem(QString::fromStdString(subject));
-    }
-}
-
-std::set<std::string> MainWindow::getSelectedSubjects(QListWidget* listWidget) const {
-    std::set<std::string> result;
-    for (QListWidgetItem* item : listWidget->selectedItems()) {
-        result.insert(item->text().toStdString());
-    }
-    return result;
-}
-
-void MainWindow::onSearchClicked() {
-    auto required = getSelectedSubjects(requiredSubjectsList);
-    auto excluded = getSelectedSubjects(excludedSubjectsList);
-    Logger::instance().info("Запрос поиска студентов. Обязательные: " + std::to_string(required.size()) + ", исключаемые: " + std::to_string(excluded.size()));
-    auto found = findStudentsBySubjects(studentSubjects, required, excluded);
-    Logger::instance().info("Результат поиска: найдено студентов: " + std::to_string(found.size()));
-    resultEdit->clear();
-    if (found.empty()) {
-        resultEdit->setText("Нет подходящих студентов.");
-    } else {
-        for (const auto& surname : found) {
-            resultEdit->append(QString::fromStdString(surname));
-        }
-    }
-    clearButton->setEnabled(true);
-}
-
-void MainWindow::onClearClicked() {
-    requiredSubjectsList->clearSelection();
-    excludedSubjectsList->clearSelection();
-    resultEdit->clear();
-    clearButton->setEnabled(false);
-}
-
-void MainWindow::onChooseFileClicked() {
+void MainWindow::onOpenFile() {
     QString filename = QFileDialog::getOpenFileName(this, "Выберите файл со студентами");
     if (!filename.isEmpty()) {
-        // Очистить все данные и загрузить новый файл
-        studentSubjects.clear();
-        subjectStudents.clear();
-        allSubjects.clear();
-        requiredSubjectsList->clear();
-        excludedSubjectsList->clear();
-        resultEdit->clear();
-        clearButton->setEnabled(false);
-        loadData(filename);
-        updateSubjectsList();
+        openStudentTab(filename);
+    }
+}
+
+void MainWindow::openStudentTab(const QString& filename) {
+    StudentWidget* widget = new StudentWidget(filename);
+    connect(widget, &StudentWidget::requestOpenAnother, this, &MainWindow::onOpenFile);
+    int idx = tabWidget->addTab(widget, filename.section('/', -1));
+    tabWidget->setCurrentIndex(idx);
+}
+
+void MainWindow::onTabCloseRequested(int index) {
+    QWidget* widget = tabWidget->widget(index);
+    tabWidget->removeTab(index);
+    delete widget;
+    if (tabWidget->count() == 0) {
+        this->close();
     }
 }

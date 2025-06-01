@@ -13,13 +13,15 @@ SOURCES += \
     mainwindow.cpp \
     students_data.cpp \
     logger.cpp \
-    welcome_dialog.cpp
+    welcome_dialog.cpp \
+    student_widget.cpp
 
 HEADERS += \
     mainwindow.h \
     students_data.h \
     logger.h \
-    welcome_dialog.h
+    welcome_dialog.h \
+    student_widget.h
 
 FORMS += \
     mainwindow.ui

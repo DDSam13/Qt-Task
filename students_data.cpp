@@ -31,7 +31,6 @@ std::vector<std::string> findStudentsBySubjects(const StudentSubjectsMap& studen
 {
     std::vector<std::string> result;
     for (const auto& [surname, subjects] : studentSubjects) {
-        // Проверяем наличие всех обязательных предметов
         bool hasAllRequired = std::all_of(
             requiredSubjects.begin(), requiredSubjects.end(),
             [&subjects](const std::string& subj) {
@@ -39,7 +38,6 @@ std::vector<std::string> findStudentsBySubjects(const StudentSubjectsMap& studen
             }
         );
         if (!hasAllRequired) continue;
-        // Проверяем отсутствие исключённых предметов
         bool hasExcluded = std::any_of(
             excludedSubjects.begin(), excludedSubjects.end(),
             [&subjects](const std::string& subj) {
