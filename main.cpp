@@ -1,3 +1,4 @@
+#include <QIcon>
 #include <QApplication>
 #include "mainwindow.h"
 #include "welcome_dialog.h"
@@ -5,6 +6,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/new/prefix1/images/icon.png"));
     while (true) {
         WelcomeDialog welcome;
         if (welcome.exec() == QDialog::Accepted) {
