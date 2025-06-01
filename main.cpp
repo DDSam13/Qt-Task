@@ -1,14 +1,18 @@
 #include <QApplication>
 #include "mainwindow.h"
-#include "logger.h"
+#include "welcome_dialog.h"
 
 int main(int argc, char *argv[])
 {
-    Logger::instance().info("Запуск приложения Task4");
     QApplication app(argc, argv);
-    MainWindow w;
-    w.show();
-    int result = app.exec();
-    Logger::instance().info("Завершение приложения Task4");
-    return result;
+    WelcomeDialog welcome;
+    if (welcome.exec() == QDialog::Accepted) {
+        QString filename = welcome.getSelectedFile();
+        if (!filename.isEmpty()) {
+            MainWindow w(nullptr, filename);
+            w.show();
+            return app.exec();
+        }
+    }
+    return 0;
 }

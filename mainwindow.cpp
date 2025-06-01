@@ -6,7 +6,7 @@
 #include <QFileDialog>
 #include "logger.h"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+MainWindow::MainWindow(QWidget* parent, const QString& filename) : QMainWindow(parent), initialFilename(filename) {
     QWidget* central = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(central);
 
@@ -26,6 +26,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     searchButton = new QPushButton("Поиск", this);
     mainLayout->addWidget(searchButton);
 
+    // Кнопка очистки
+    clearButton = new QPushButton("Очистить", this);
+    clearButton->setEnabled(false);
+    mainLayout->addWidget(clearButton);
+
+    // Кнопка выбора другого файла
+    chooseFileButton = new QPushButton("Выбрать другой файл", this);
+    mainLayout->addWidget(chooseFileButton);
+
     // Поле для вывода результатов
     resultEdit = new QTextEdit(this);
     resultEdit->setReadOnly(true);
@@ -35,21 +44,20 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     resize(600, 400);
 
     connect(searchButton, &QPushButton::clicked, this, &MainWindow::onSearchClicked);
+    connect(clearButton, &QPushButton::clicked, this, &MainWindow::onClearClicked);
+    connect(chooseFileButton, &QPushButton::clicked, this, &MainWindow::onChooseFileClicked);
 
-    // Удалено приветственное окно
-    loadData();
+    // Загружаем данные только если файл передан
+    if (!initialFilename.isEmpty()) {
+        loadData(initialFilename);
+    }
     updateSubjectsList();
     Logger::instance().info("Приложение запущено. Открытие главного окна.");
 }
 
 MainWindow::~MainWindow() {}
 
-void MainWindow::loadData() {
-    QString filename = QFileDialog::getOpenFileName(this, "Выберите файл со студентами");
-    if (filename.isEmpty()) {
-        Logger::instance().warning("Пользователь не выбрал файл для загрузки студентов.");
-        return;
-    }
+void MainWindow::loadData(const QString& filename) {
     try {
         loadStudentsFromFile(filename.toStdString(), studentSubjects, subjectStudents);
         Logger::instance().info("Данные успешно загружены из файла: " + filename.toStdString());
@@ -94,5 +102,29 @@ void MainWindow::onSearchClicked() {
         for (const auto& surname : found) {
             resultEdit->append(QString::fromStdString(surname));
         }
+    }
+    clearButton->setEnabled(true);
+}
+
+void MainWindow::onClearClicked() {
+    requiredSubjectsList->clearSelection();
+    excludedSubjectsList->clearSelection();
+    resultEdit->clear();
+    clearButton->setEnabled(false);
+}
+
+void MainWindow::onChooseFileClicked() {
+    QString filename = QFileDialog::getOpenFileName(this, "Выберите файл со студентами");
+    if (!filename.isEmpty()) {
+        // Очистить все данные и загрузить новый файл
+        studentSubjects.clear();
+        subjectStudents.clear();
+        allSubjects.clear();
+        requiredSubjectsList->clear();
+        excludedSubjectsList->clear();
+        resultEdit->clear();
+        clearButton->setEnabled(false);
+        loadData(filename);
+        updateSubjectsList();
     }
 }

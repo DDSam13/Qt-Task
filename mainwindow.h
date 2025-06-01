@@ -10,14 +10,16 @@
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(QWidget* parent = nullptr, const QString& filename = QString());
     ~MainWindow();
 
 private slots:
     void onSearchClicked();
+    void onClearClicked();
+    void onChooseFileClicked();
 
 private:
-    void loadData();
+    void loadData(const QString& filename);
     void updateSubjectsList();
     std::set<std::string> getSelectedSubjects(QListWidget* listWidget) const;
 
@@ -28,5 +30,9 @@ private:
     QListWidget* requiredSubjectsList;
     QListWidget* excludedSubjectsList;
     QPushButton* searchButton;
+    QPushButton* clearButton;
+    QPushButton* chooseFileButton;
     QTextEdit* resultEdit;
+
+    QString initialFilename;
 };
