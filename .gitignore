@@ -1,0 +1,28 @@
+# --- Сборочные артефакты ---
+/build-*/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# --- QMake/CMake (Qt) ---
+*.pro.user*
+CMakeCache.txt
+CMakeFiles/
+Makefile
+compile_commands.json
+ui_*.h
+moc_*.cpp
+qrc_*.cpp
+
+# --- Временные файлы редакторов / IDE ---
+*~
+*.swp
+*.swo
+.idea/
+*.qmlproject.user
+
+# --- Логи ---
+*.log
