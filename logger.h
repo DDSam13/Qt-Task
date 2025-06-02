@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <mutex>
+#include <filesystem>
 
 enum class LogLevel {
     Info,

@@ -25,4 +25,6 @@ add_executable(Task4 main.cpp ${SOURCES} ${HEADERS})
 # target_include_directories(Task4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Линкуем с Qt
-target_link_libraries(Task4 PRIVATE Qt5::Widgets) 
+target_link_libraries(Task4 PRIVATE Qt5::Widgets)
+
+target_link_libraries(Task4 PRIVATE stdc++fs) 

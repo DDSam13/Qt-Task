@@ -3,6 +3,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
+#include "logger.h"
+#include <sstream>
 
 StudentWidget::StudentWidget(const QString& filename, QWidget* parent) : QWidget(parent) {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -41,6 +43,7 @@ StudentWidget::StudentWidget(const QString& filename, QWidget* parent) : QWidget
 }
 
 void StudentWidget::loadData(const QString& filename) {
+    Logger::instance().info("Открытие файла: " + filename.toStdString());
     try {
         loadStudentsFromFile(filename.toStdString(), studentSubjects, subjectStudents);
         allSubjects.clear();
@@ -48,6 +51,7 @@ void StudentWidget::loadData(const QString& filename) {
             allSubjects.insert(subject);
         }
     } catch (const std::exception& ex) {
+        Logger::instance().error(std::string("Ошибка загрузки файла: ") + ex.what());
         QMessageBox::critical(this, "Ошибка", ex.what());
     }
 }
@@ -72,7 +76,20 @@ std::set<std::string> StudentWidget::getSelectedSubjects(QListWidget* listWidget
 void StudentWidget::onSearchClicked() {
     auto required = getSelectedSubjects(requiredSubjectsList);
     auto excluded = getSelectedSubjects(excludedSubjectsList);
+    std::ostringstream reqStream, excStream;
+    reqStream << "Обязательные: ";
+    for (auto it = required.begin(); it != required.end(); ++it) {
+        if (it != required.begin()) reqStream << ", ";
+        reqStream << *it;
+    }
+    excStream << "Исключаемые: ";
+    for (auto it = excluded.begin(); it != excluded.end(); ++it) {
+        if (it != excluded.begin()) excStream << ", ";
+        excStream << *it;
+    }
+    Logger::instance().info(reqStream.str() + "; " + excStream.str());
     auto found = findStudentsBySubjects(studentSubjects, required, excluded);
+    Logger::instance().info("Найдено студентов: " + std::to_string(found.size()));
     resultEdit->clear();
     if (found.empty()) {
         resultEdit->setText("Нет подходящих студентов.");

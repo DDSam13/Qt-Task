@@ -2,13 +2,34 @@
 #include <chrono>
 #include <iomanip>
 #include <ctime>
+#include <sstream>
+#include <filesystem>
+#include <iostream>
+
+using namespace std::filesystem;
 
 Logger::Logger() {
-    logFile.open("app.log", std::ios::app);
+    auto now = std::chrono::system_clock::now();
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+#ifdef _WIN32
+    localtime_s(&tm, &t);
+#else
+    localtime_r(&t, &tm);
+#endif
+    char buf[64];
+    std::strftime(buf, sizeof(buf), "log/app_%Y%m%d_%H%M%S.log", &tm);
+    logFile.open(buf, std::ios::out);
+    if (logFile.is_open()) {
+        log(LogLevel::Info, "Старт сессии приложения");
+    }
 }
 
 Logger::~Logger() {
-    if (logFile.is_open()) logFile.close();
+    if (logFile.is_open()) {
+        log(LogLevel::Info, "Завершение сессии приложения");
+        logFile.close();
+    }
 }
 
 Logger& Logger::instance() {
